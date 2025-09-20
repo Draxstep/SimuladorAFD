@@ -2,7 +2,7 @@
 
 from src.utils.file_handler import FileHandler
 from src.utils.string_generator import StringGenerator
-from src.utils.validators import validate_automaton_definition # <-- NUEVA IMPORTACIÓN
+from src.utils.validators import validate_automaton_definition
 
 class MainPresenter:
     def __init__(self, model, view):
@@ -17,28 +17,21 @@ class MainPresenter:
     
     def build_automaton(self, data):
         try:
-            # Validar los datos antes de construir el autómata
             validate_automaton_definition(data)
             
-            # Limpiar el modelo
             self.model.__init__()
             
-            # Agregar estados
             for state in data['states']:
                 self.model.add_state(state)
             
-            # Agregar alfabeto
             for symbol in data['alphabet']:
                 self.model.add_symbol(symbol)
             
-            # Establecer estado inicial
             self.model.set_initial(data['initial'])
             
-            # Agregar estados finales
             for state in data['finals']:
                 self.model.add_final_state(state)
             
-            # Agregar transiciones
             for from_state, symbol, to_state in data['transitions']:
                 self.model.add_transition(from_state, symbol, to_state)
             
@@ -57,17 +50,19 @@ class MainPresenter:
                 return None
             
             accepted, path = self.model.evaluate(input_string)
+            automaton_data = self.model.to_dict()
             
             if path:
                 final_state = path[-1][0]
                 if accepted:
                     message = f"Proceso finalizado. El estado final es ({final_state}).\nResultado: La cadena '{input_string}' es ACEPTADA."
                 else:
-                    message = f"Proceso finalizado. El estado final es ({final_state}).\nResultado: La cadena '{input_string}' es RECHAZADA."
+                    # Texto modificado para el caso de rechazo
+                    message = f"La cadena finaliza en el estado ({final_state}), que NO es un estado de aceptación.\nResultado: La cadena '{input_string}' es RECHAZADA."
             else:
                 message = "No se pudo evaluar la cadena. Verifique que todos los símbolos pertenezcan al alfabeto."
             
-            return accepted, path, message
+            return accepted, path, message, automaton_data
             
         except Exception as e:
             self.view.show_message("Error", str(e), 'error')
@@ -79,6 +74,7 @@ class MainPresenter:
                 self.view.show_message("Error", "Primero debe construir un autómata válido", 'error')
                 return None
             
+            # El software debe generar las primeras 10 cadenas aceptadas por el autómata en orden de longitud, de la más corta a la más larga[cite: 11, 36, 37].
             strings = self.generator.generate(self.model, limit=10)
             return strings
             
@@ -104,7 +100,6 @@ class MainPresenter:
             data = self.file_handler.load(filename)
             self.model.from_dict(data)
             
-            # Actualizar la vista del editor
             self.view.editor.update_display(data)
             self.view.show_message("Éxito", f"Autómata cargado desde {filename}")
             
