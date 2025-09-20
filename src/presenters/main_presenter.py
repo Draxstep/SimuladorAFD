@@ -2,6 +2,7 @@
 
 from src.utils.file_handler import FileHandler
 from src.utils.string_generator import StringGenerator
+from src.utils.validators import validate_automaton_definition # <-- NUEVA IMPORTACIÓN
 
 class MainPresenter:
     def __init__(self, model, view):
@@ -16,6 +17,9 @@ class MainPresenter:
     
     def build_automaton(self, data):
         try:
+            # Validar los datos antes de construir el autómata
+            validate_automaton_definition(data)
+            
             # Limpiar el modelo
             self.model.__init__()
             
@@ -28,19 +32,15 @@ class MainPresenter:
                 self.model.add_symbol(symbol)
             
             # Establecer estado inicial
-            if data['initial']:
-                if not self.model.set_initial(data['initial']):
-                    raise ValueError(f"Estado inicial '{data['initial']}' no válido")
+            self.model.set_initial(data['initial'])
             
             # Agregar estados finales
             for state in data['finals']:
-                if not self.model.add_final_state(state):
-                    raise ValueError(f"Estado final '{state}' no válido")
+                self.model.add_final_state(state)
             
             # Agregar transiciones
             for from_state, symbol, to_state in data['transitions']:
-                if not self.model.add_transition(from_state, symbol, to_state):
-                    raise ValueError(f"Transición inválida: δ({from_state}, {symbol}) = {to_state}")
+                self.model.add_transition(from_state, symbol, to_state)
             
             if not self.model.is_valid():
                 raise ValueError("El autómata no está completo")
